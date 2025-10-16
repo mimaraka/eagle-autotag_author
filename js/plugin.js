@@ -20,10 +20,11 @@ const getAuthorTagGroupId = async (tagGroupName) => {
 	return ret?.id ?? null;
 }
 
-const createAuthorTagMap = async (items, authorTagGroupId) => {
+const createAuthorTagMap = async (items, authorTagGroupId, statusView) => {
 	let authorTagMap = {};
 
-	for (item of items) {
+	for (const [index, item] of Object.entries(items)) {
+		statusView.textContent = `Scanning items... (${parseInt(index) + 1} / ${items.length})`;
 		for (tagName of item.tags) {
 			const tags = await eagle.tag.get();
 			const tag = tags.find(t => t.name === tagName);
@@ -85,11 +86,9 @@ btn.addEventListener('click', async () => {
 	const original = btn.innerHTML;
 	btn.innerHTML = 'Processing...';
 
-	statusView.textContent = 'Scanning items...';
 	const items = await eagle.item.getAll();
-	const authorTagMap = await createAuthorTagMap(items, authorTagGroupId);
+	const authorTagMap = await createAuthorTagMap(items, authorTagGroupId, statusView);
 
-	statusView.textContent = 'Tagging items...';
 	const updatedItemsCount = await autoTagAuthor(items, authorTagMap, statusView);
 
 	statusView.textContent = '';
