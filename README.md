@@ -2,6 +2,8 @@
 
 An [Eagle](https://eagle.cool/) plugin to automatically add author tags to your items based on existing tagged items. This is particularly useful for content saved from platforms like X (formerly Twitter).
 
+<img width="554" height="316" alt="screenshot" src="https://github.com/user-attachments/assets/adcb5d80-297a-4727-a596-f3f2e1f1d897" />
+
 ## How It Works
 
 Many of us save inspirational images from artists on X/Twitter. We might create a tag group called "Author" and add tags for each artist (e.g., `@artist_name`). Tagging every single item can be tedious.
