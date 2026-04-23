@@ -14,40 +14,40 @@ eagle.onPluginHide(() => {
 	console.log('eagle.onPluginHide');
 });
 
-const getAuthorTagGroupId = async (tagGroupName) => {
+const getArtistTagGroup = async (tagGroupName) => {
 	const tagGroups = await eagle.tagGroup.get();
-	const ret = tagGroups.find(g => g.name === tagGroupName);
-	return ret?.id ?? null;
+	return tagGroups.find(g => g.name === tagGroupName) ?? null;
 }
 
-const createAuthorTagMap = async (items, authorTagGroupId, statusView) => {
-	let authorTagMap = {};
+const createArtistTagMap = async (items, artistTagGroup, statusView) => {
+	let artistTagMap = {};
 
 	for (const [index, item] of Object.entries(items)) {
 		statusView.textContent = `Scanning items... (${parseInt(index) + 1} / ${items.length})`;
-		for (tagName of item.tags) {
-			const tags = await eagle.tag.get();
-			const tag = tags.find(t => t.name === tagName);
-			if (tag && tag.groups.includes(authorTagGroupId)) {
-				const id = item.url.match(/^https?:\/\/(x|twitter)\.com\/(?<id>\w+)\/status\/\d+/)?.groups.id;
-				if (id) {
-					authorTagMap[id] = tag.name;
-				}
-			}
+		
+		const a = item.tags.find(tagName => artistTagGroup.tags.find(artistTagName => artistTagName === tagName));
+		const id = item.url.match(/^https?:\/\/(x|twitter)\.com\/(?<id>\w+)\/status\/\d+/)?.groups.id;
+		if (a && id) {
+			artistTagMap[id] = a;
 		}
 	}
-	return authorTagMap;
+	return artistTagMap;
 }
 
-const autoTagAuthor = async (items, authorTagMap, statusView) => {
+const autoTagArtist = async (items, artistTagMap, statusView) => {
 	let count = 0;
 	for (item of items) {
 		const id = item.url.match(/^https?:\/\/(x|twitter)\.com\/(?<id>\w+)\/status\/\d+/)?.groups.id;
-		if (id && authorTagMap[id] && !item.tags.includes(authorTagMap[id])) {
-			item.tags.push(authorTagMap[id]);
-			await item.save();
-			statusView.textContent = `Tagging item ID: ${item.id} with tag "${authorTagMap[id]}"`;
-			count++;
+		if (id && artistTagMap[id] && !item.tags.includes(artistTagMap[id])) {
+			item.tags.push(artistTagMap[id]);
+			// 謎のエラーが出るケースがある
+			try {
+				await item.save();
+				statusView.textContent = `Tagging item ID: ${item.id} with tag "${artistTagMap[id]}"`;
+				count++;
+			} catch (error) {
+				console.error(`Failed to save item ID: ${item.id}`, error);
+			}
 		}
 	}
 	return count;
@@ -75,9 +75,9 @@ const notify = (message) => {
 const btn = document.getElementById('autotag');
 btn.addEventListener('click', async () => {
 	const statusView = document.getElementById('status');
-	const tagGroupName = document.getElementById('authorInput');
-	const authorTagGroupId = await getAuthorTagGroupId(tagGroupName.value);
-	if (!authorTagGroupId) {
+	const tagGroupName = document.getElementById('artistInput');
+	const artistTagGroup = await getArtistTagGroup(tagGroupName.value);
+	if (!artistTagGroup) {
 		notify(`TagGroup "${tagGroupName.value}" not found.`);
 		return;
 	}
@@ -87,9 +87,9 @@ btn.addEventListener('click', async () => {
 	btn.innerHTML = 'Processing...';
 
 	const items = await eagle.item.getAll();
-	const authorTagMap = await createAuthorTagMap(items, authorTagGroupId, statusView);
+	const artistTagMap = await createArtistTagMap(items, artistTagGroup, statusView);
 
-	const updatedItemsCount = await autoTagAuthor(items, authorTagMap, statusView);
+	const updatedItemsCount = await autoTagArtist(items, artistTagMap, statusView);
 
 	statusView.textContent = '';
 	btn.innerHTML = original;
